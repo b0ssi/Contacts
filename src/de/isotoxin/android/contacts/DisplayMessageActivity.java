@@ -56,8 +56,10 @@ public class DisplayMessageActivity extends Activity {
 		String name_display = db_cursor.getString(0);
 		String tel_serialized = db_cursor.getString(1);
 		String notes = db_cursor.getString(2);
+		if (notes == null) notes = "";
 		notes = notes.replace("\\n", "\n").
-					  replace("\\:", ":");
+					  replace("\\:", ":").
+					  replace("\\,", ",");
 
 		// Create layout
 		ScrollView scrollView = new ScrollView(this);
