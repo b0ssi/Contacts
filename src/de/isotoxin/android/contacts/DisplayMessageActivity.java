@@ -1,7 +1,5 @@
 package de.isotoxin.android.contacts;
 
-import java.util.Iterator;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,10 +18,11 @@ import android.support.v4.app.NavUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.LinearLayout;
-import android.widget.LinearLayout.LayoutParams;
 import android.widget.ScrollView;
 import android.widget.Space;
 import android.widget.TextView;
+
+import java.util.Iterator;
 
 public class DisplayMessageActivity extends Activity {
 
@@ -50,12 +49,13 @@ public class DisplayMessageActivity extends Activity {
 			public void onCreate(SQLiteDatabase db) {
 			}
 		};
-		Cursor db_cursor = database_helper.getReadableDatabase().rawQuery("SELECT name_display, tel, note FROM contacts WHERE id = ?",
+		Cursor db_cursor = database_helper.getReadableDatabase().rawQuery("SELECT name_display, tel, note, email FROM contacts WHERE id = ?",
 				new String[] { Integer.toString(this.contact_id) });
 		db_cursor.moveToFirst();
 		String name_display = db_cursor.getString(0);
 		String tel_serialized = db_cursor.getString(1);
 		String notes = db_cursor.getString(2);
+		String emails_serialized = db_cursor.getString(3);
 		if (notes == null) notes = "";
 		notes = notes.replace("\\n", "\n").
 					  replace("\\:", ":").
@@ -94,14 +94,45 @@ public class DisplayMessageActivity extends Activity {
 				while (iter_device_type.hasNext()) {
 					String device_type = iter_device_type.next();
 					JSONArray tel_nums_for_device_type = tel.getJSONObject(location).getJSONArray(device_type);
-					if (tel_nums_for_device_type.length() > 0) {
-						for (int i=0; i<tel_nums_for_device_type.length(); i++) {
-							String tel_number_formatted = location.toUpperCase() + " " + device_type.toUpperCase() + " #" + (i+1) + ": " + tel.getJSONObject(location).getJSONArray(device_type).getJSONArray(i).getString(0) + " " + tel.getJSONObject(location).getJSONArray(device_type).getJSONArray(i).getString(1);
-							TextView tel_number = new TextView(this);
-							tel_number.setText(tel_number_formatted);
-							layout.addView(tel_number);
-						}
+					for (int i=0; i<tel_nums_for_device_type.length(); i++) {
+						String tel_number_formatted = location.toUpperCase() + " " + device_type.toUpperCase() + " #" + (i+1) + ": " + tel.getJSONObject(location).getJSONArray(device_type).getJSONArray(i).getString(0) + " " + tel.getJSONObject(location).getJSONArray(device_type).getJSONArray(i).getString(1);
+						TextView tel_number = new TextView(this);
+						tel_number.setText(tel_number_formatted);
+						tel_number.setTextIsSelectable(true);
+						layout.addView(tel_number);
 					}
+				}
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		// add email addresses
+		Space emailsTitleSpace = new Space(this);
+		emailsTitleSpace.setMinimumHeight(10);
+		layout.addView(emailsTitleSpace);
+		TextView emailsTitle = new TextView(this);
+		emailsTitle.setTextSize(20);
+		emailsTitle.setText("Email Addresses");
+		emailsTitle.setTextColor(0xffaaaaff);
+		layout.addView(emailsTitle);
+		try {
+			JSONObject emails = (JSONObject) new JSONTokener(emails_serialized).nextValue();
+			Iterator<String> emails_loc_iter = emails.keys();
+			while (emails_loc_iter.hasNext()) {
+				String emails_loc_str = emails_loc_iter.next();
+				String emails_loc_formatted_str = emails_loc_str.substring(0, 1).toUpperCase() + emails_loc_str.substring(1);
+				JSONArray emails_addresses = emails.getJSONArray(emails_loc_str);
+				// email location label
+				TextView email_loc_view = new TextView(this);
+				email_loc_view.setText(emails_loc_formatted_str);
+				email_loc_view.setTextColor(0xff888888);;
+				layout.addView(email_loc_view);
+				for (int i=0; i<emails_addresses.length(); i++) {
+					// email address
+					TextView email_view = new TextView(this);
+					email_view.setText(emails_addresses.getString(i));
+					email_view.setTextIsSelectable(true);
+					layout.addView(email_view);
 				}
 			}
 		} catch (JSONException e) {
@@ -118,6 +149,7 @@ public class DisplayMessageActivity extends Activity {
 		layout.addView(noteTitle);
 		TextView noteBody = new TextView(this);
 		noteBody.setText(notes);
+		noteBody.setTextIsSelectable(true);
 		layout.addView(noteBody);
 	}
 
